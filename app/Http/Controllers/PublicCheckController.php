@@ -63,6 +63,8 @@ class PublicCheckController extends Controller
         $emails = collect();
         if ($alias !== '') {
             $query = Email::query()
+                ->select(['id', 'to_address', 'alias', 'domain', 'from_address', 'from_name', 'subject', 'otp_code', 'received_at'])
+                ->withExists('attachments')
                 ->where('alias', $alias)
                 ->where('is_spam', false)
                 ->orderByDesc('id')
@@ -73,8 +75,6 @@ class PublicCheckController extends Controller
             }
 
             $emails = $query->get()->map(function (Email $e) {
-                $otp = $e->otp_code ?: $this->extractOtp($e);
-
                 return [
                     'id' => $e->id,
                     'to' => $e->to_address,
@@ -83,8 +83,8 @@ class PublicCheckController extends Controller
                     'from' => $e->from_address,
                     'from_name' => $e->from_name ?: $e->from_address,
                     'subject' => $e->subject ?: '(Tanpa Subjek)',
-                    'otp' => $otp,
-                    'has_attachments' => $e->attachments()->exists(),
+                    'otp' => $e->otp_code ?: null,
+                    'has_attachments' => (bool) $e->attachments_exists,
                     'received_at' => $e->received_at?->toIso8601String(),
                     'received_diff' => $e->received_at?->diffForHumans(),
                     'received_time' => $e->received_at?->translatedFormat('d M Y, H:i:s') . ' WIB',

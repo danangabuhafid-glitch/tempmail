@@ -70,6 +70,9 @@ Route::middleware(['auth', 'force.pwd'])->group(function () {
     Route::get('/email/{email}/eml', [InboxController::class, 'downloadEml'])->name('inbox.eml');
     Route::get('/attachment/{attachment}', [InboxController::class, 'attachment'])->name('inbox.attachment');
 
+    // Halaman cepat kode OTP
+    Route::get('/otp', [InboxController::class, 'otpCepat'])->name('otp.index');
+
     // Halaman perantara anti-phishing untuk semua link di email
     Route::get('/keluar', [LinkController::class, 'keluar'])->name('link.keluar');
 
@@ -92,7 +95,14 @@ Route::middleware(['auth', 'force.pwd'])->group(function () {
         Route::post('/pengaturan/notifikasi', [SettingsController::class, 'updateNotify'])->name('settings.notify');
         Route::post('/pengaturan/notifikasi/tes', [SettingsController::class, 'testNotify'])->name('settings.notify.test');
         Route::post('/pengaturan/domain', [SettingsController::class, 'addDomain'])->name('settings.domain.add');
+        Route::post('/pengaturan/domain/status', [SettingsController::class, 'toggleDomainStatus'])->name('settings.domain.status');
         Route::delete('/pengaturan/domain', [SettingsController::class, 'removeDomain'])->name('settings.domain.remove');
+
+        // Kelola akun pengguna
+        Route::get('/pengguna', [SettingsController::class, 'usersIndex'])->name('users.index');
+        Route::post('/pengguna', [SettingsController::class, 'storeUser'])->name('settings.user.store');
+        Route::patch('/pengguna/{user}/kuota', [SettingsController::class, 'updateUserQuota'])->name('settings.user.quota');
+        Route::delete('/pengguna/{user}', [SettingsController::class, 'destroyUser'])->name('settings.user.destroy');
 
         // Blokir pengirim (tombol cepat ada di halaman detail email)
         Route::post('/pengaturan/blokir', [SettingsController::class, 'blockSender'])->name('settings.block');

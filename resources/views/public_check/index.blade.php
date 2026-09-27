@@ -204,6 +204,12 @@
             startAutoRefresh();
         }
 
+        // Trigger check saat ganti domain
+        document.getElementById('select-domain').addEventListener('change', () => {
+            const aliasVal = document.getElementById('input-alias').value.trim();
+            if (aliasVal) submitCheck();
+        });
+
         // Toggle auto refresh
         document.getElementById('auto-refresh-switch').addEventListener('change', (e) => {
             if (e.target.checked) {
