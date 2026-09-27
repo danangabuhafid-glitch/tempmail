@@ -194,19 +194,27 @@
                             <div class="d-flex flex-wrap gap-2" id="detail-attachments-list"></div>
                         </div>
 
-                        {{-- Nav Tabs: HTML Asli vs Teks Polos --}}
-                        <ul class="nav nav-tabs mb-3" role="tablist">
-                            <li class="nav-item">
-                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-body-html" type="button">
-                                    <i class="bi bi-window me-1"></i>Tampilan Asli (HTML)
+                        {{-- Nav Tabs: HTML Asli vs Teks Polos & Toggle Pas Layar --}}
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <ul class="nav nav-tabs mb-0" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-body-html" type="button">
+                                        <i class="bi bi-window me-1"></i>Tampilan Asli (HTML)
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-body-text" type="button">
+                                        <i class="bi bi-file-text me-1"></i>Teks Polos
+                                    </button>
+                                </li>
+                            </ul>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-light border shadow-sm px-2 py-1" id="btn-toggle-fit" onclick="toggleFitMode()" title="Ganti mode pas layar / ukuran asli">
+                                    <i class="bi bi-arrows-angle-contract text-primary me-1" id="icon-fit-mode"></i>
+                                    <span class="small fw-semibold" id="text-fit-mode">Pas Layar</span>
                                 </button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-body-text" type="button">
-                                    <i class="bi bi-file-text me-1"></i>Teks Polos
-                                </button>
-                            </li>
-                        </ul>
+                            </div>
+                        </div>
 
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="tab-body-html">
@@ -260,14 +268,20 @@
     }
     @media (max-width: 576px) {
         .card-body {
-            padding: 1rem !important;
+            padding: 0.85rem !important;
+        }
+        #view-detail .card-body {
+            padding: 0.6rem !important;
         }
         #detail-otp-box {
-            padding: 1rem !important;
+            padding: 0.85rem !important;
         }
         #detail-otp-btn {
             width: 100%;
             justify-content: center;
+        }
+        .email-iframe-wrapper {
+            border-radius: 8px !important;
         }
     }
 </style>
@@ -624,21 +638,50 @@
         }
     }
 
+    let fitModeActive = true;
+    function toggleFitMode() {
+        fitModeActive = !fitModeActive;
+        const text = document.getElementById('text-fit-mode');
+        const icon = document.getElementById('icon-fit-mode');
+        const iframe = document.getElementById('detail-iframe');
+
+        if (text) text.innerText = fitModeActive ? 'Pas Layar' : 'Ukuran Asli';
+        if (icon) icon.className = fitModeActive ? 'bi bi-arrows-angle-contract text-primary me-1' : 'bi bi-arrows-angle-expand text-muted me-1';
+
+        if (iframe && iframe.contentWindow && typeof iframe.contentWindow.setFitMode === 'function') {
+            iframe.contentWindow.setFitMode(fitModeActive);
+        }
+    }
+
+    // Tangkap pesan penyesuaian tinggi iframe dari scaler di dalam email
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'tm-iframe-height') {
+            const iframe = document.getElementById('detail-iframe');
+            if (iframe && event.data.height > 80) {
+                iframe.style.height = event.data.height + 'px';
+            }
+        }
+    });
+
     function adjustIframeHeight() {
         const iframe = document.getElementById('detail-iframe');
         if (!iframe) return;
         try {
-            const doc = iframe.contentWindow.document;
-            if (doc) {
-                const body = doc.body;
-                const html = doc.documentElement;
-                const h = Math.max(
-                    body ? body.scrollHeight : 0,
-                    html ? html.scrollHeight : 0,
-                    body ? body.offsetHeight : 0
-                );
-                if (h > 120) {
-                    iframe.style.height = (h + 30) + 'px';
+            if (iframe.contentWindow && typeof iframe.contentWindow.fitEmail === 'function') {
+                iframe.contentWindow.fitEmail();
+            } else {
+                const doc = iframe.contentWindow.document;
+                if (doc) {
+                    const body = doc.body;
+                    const html = doc.documentElement;
+                    const h = Math.max(
+                        body ? body.scrollHeight : 0,
+                        html ? html.scrollHeight : 0,
+                        body ? body.offsetHeight : 0
+                    );
+                    if (h > 120) {
+                        iframe.style.height = (h + 30) + 'px';
+                    }
                 }
             }
         } catch (e) {
