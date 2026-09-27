@@ -310,6 +310,30 @@
         </div>
     </div>
 </nav>
+@else
+<nav class="tm-nav mb-4">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+            <a class="tm-brand d-flex align-items-center gap-2" href="{{ url('/cek') }}">
+                <i class="bi bi-envelope-paper-fill fs-4"></i> TempMail
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url('/cek') }}" class="tm-navlink active d-none d-sm-inline-block">
+                    <i class="bi bi-search me-1"></i>Cek Email
+                </a>
+                <a href="{{ url('/api/docs') }}" target="_blank" class="tm-navlink d-none d-sm-inline-block">
+                    <i class="bi bi-code-square me-1"></i>API Docs
+                </a>
+                <button type="button" id="theme-toggle" class="btn btn-sm btn-light rounded-pill py-0 px-2" title="Ganti mode terang/gelap">
+                    <i class="bi bi-moon-stars"></i>
+                </button>
+                <a href="{{ route('login') }}" class="btn btn-sm btn-light rounded-pill py-1 px-3">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
 @endauth
 
 <div class="container pb-5">

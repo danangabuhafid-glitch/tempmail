@@ -41,6 +41,11 @@ Route::get('/attachment/inline/{attachment}', [InboxController::class, 'inlineAt
     ->middleware('signed')
     ->name('inbox.inline');
 
+// Web Publik: Cek isi email masuk & kode OTP tanpa perlu login
+Route::get('/cek', [\App\Http\Controllers\PublicCheckController::class, 'index'])->name('public.check');
+Route::get('/cek/email/{email}', [\App\Http\Controllers\PublicCheckController::class, 'showEmail'])->name('public.check.email');
+Route::get('/cek/attachment/{attachment}', [\App\Http\Controllers\PublicCheckController::class, 'downloadAttachment'])->name('public.check.attachment');
+
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
