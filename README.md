@@ -50,25 +50,95 @@ Tanpa mail server sendiri, tanpa polling IMAP, real-time, dan gratis di sisi Clo
 - **Webhook**: shared secret `hash_equals`, token diperiksa sebelum rate limiter, batas ukuran payload, rate limit per menit, dan log setiap request
 - **Akun alias**: password acak unik per akun, wajib diganti saat login pertama, hanya bisa melihat kotak masuknya sendiri
 
-### Otomasi
+### Developer API & Otomasi
 
-**API REST bertoken** (aktifkan di Pengaturan → API & Bookmarklet):
+Tersedia RESTful API lengkap untuk integrasi bot, script pendaftaran, testing, dan automasi.
+
+**Autentikasi:**
+Token API didapat dari menu **Pengaturan ➔ API & Bookmarklet** di web.
+Kirim via salah satu metode berikut:
+- Header: `Authorization: Bearer <TOKEN>`
+- Header: `X-Api-Token: <TOKEN>`
+- Query string: `?token=<TOKEN>` atau `?api_key=<TOKEN>`
+
+#### Ringkasan Endpoint
+
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| `GET` | `/api/docs` | Dokumentasi publik JSON & panduan endpoint |
+| `GET` | `/api/domains` | Daftar domain aktif & domain default |
+| `POST` / `GET` | `/api/create` | **Auto-Buat** alamat temp mail baru (acak / custom + TTL) |
+| `GET` | `/api/emails` | Daftar email masuk (filter: `?email=...`, `?unread=true`) |
+| `GET` | `/api/emails/{id}` | Detail email lengkap (Teks, HTML, Attachment) |
+| `GET` | `/api/otp` | Ambil kode OTP terbaru secara instan |
+| `GET` | `/api/wait-email` | **Long-polling**: Tunggu email baru masuk (timeout 5-60s) |
+| `GET` | `/api/wait-otp` | **Long-polling**: Tunggu kode OTP masuk secara real-time |
+| `DELETE` | `/api/emails/{id}` | Hapus email |
+| `DELETE` | `/api/alias/{alias}` | Hapus alias temp mail |
+
+#### Contoh cURL
 
 ```bash
-# Daftar email
-curl -H "Authorization: Bearer TOKEN" "https://mail.domainmu.com/api/emails?alias=belanja"
+# 1. Auto-buat email acak baru (berlaku 24 jam)
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  "https://mail.danang.biz.id/api/create?prefix=bot_&domain=danang.biz.id&ttl=24h"
+# → {"success":true,"email":"bot_x8k2pq@danang.biz.id","alias":"bot_x8k2pq",...}
 
-# Kode OTP terbaru — untuk skrip yang menunggu verifikasi
-curl -H "Authorization: Bearer TOKEN" "https://mail.domainmu.com/api/otp?alias=belanja"
-# → {"otp":"482913","from":"info@netflix.com","received_at":"..."}
+# 2. Ambil daftar email masuk
+curl -H "Authorization: Bearer TOKEN" \
+  "https://mail.danang.biz.id/api/emails?email=bot_x8k2pq@danang.biz.id"
 
-# Buat alias baru dari skrip
-curl -H "Authorization: Bearer TOKEN" "https://mail.domainmu.com/api/alias/quick?site=netflix.com&ttl=24h"
+# 3. Ambil kode OTP terbaru
+curl -H "Authorization: Bearer TOKEN" \
+  "https://mail.danang.biz.id/api/otp?email=bot_x8k2pq@danang.biz.id"
+# → {"success":true,"otp":"126848","subject":"Kode OTP Verifikasi",...}
+
+# 4. Long-polling tunggu OTP masuk (tanpa perlu loop retry manual)
+curl -H "Authorization: Bearer TOKEN" \
+  "https://mail.danang.biz.id/api/wait-otp?email=bot_x8k2pq@danang.biz.id&timeout=45"
+```
+
+#### Integrasi Node.js (Puppeteer / Playwright / Axios)
+
+```javascript
+const API_URL = 'https://mail.danang.biz.id/api';
+const TOKEN = 'YOUR_API_TOKEN';
+const headers = { 'Authorization': `Bearer ${TOKEN}` };
+
+// 1. Auto-buat email
+const res = await fetch(`${API_URL}/create?prefix=reg_`, { method: 'POST', headers });
+const { email } = await res.json();
+console.log('Pakai email:', email);
+
+// 2. Daftar di web target dengan email di atas...
+
+// 3. Tunggu kode OTP masuk secara real-time (max 45 detik)
+const otpRes = await fetch(`${API_URL}/wait-otp?email=${encodeURIComponent(email)}&timeout=45`, { headers });
+const { otp } = await otpRes.json();
+console.log('Kode OTP:', otp);
+```
+
+#### Integrasi Python (`requests`)
+
+```python
+import requests
+
+API_URL = "https://mail.danang.biz.id/api"
+headers = {"Authorization": "Bearer YOUR_API_TOKEN"}
+
+# 1. Auto-buat email
+res = requests.post(f"{API_URL}/create", params={"prefix": "pybot_"}, headers=headers).json()
+email = res["email"]
+
+# 2. Tunggu OTP masuk via Long-Polling
+otp_res = requests.get(f"{API_URL}/wait-otp", params={"email": email, "timeout": 45}, headers=headers).json()
+print("OTP:", otp_res.get("otp"))
 ```
 
 - **Bookmarklet "Alias Cepat"** — satu klik saat mengisi form pendaftaran: alias bernama situsnya dibuat, tersimpan berlabel, dan langsung tersalin ke clipboard
-- **Alias sekali pakai (TTL)** — 1 jam / 24 jam / 7 hari; setelah lewat, email ke alamat itu ditolak dengan bounce
+- **Alias sekali pakai (TTL)** — 10 menit / 1 jam / 24 jam / 7 hari; setelah lewat, email ke alamat itu ditolak dengan bounce
 - **Notifikasi Telegram / ntfy.sh** — ringkasan email baru + kode OTP langsung ke HP
+- **Panduan lengkap & spesifikasi**: lihat file [API.md](API.md) atau buka `/api/docs`.
 
 ### Operasional
 
