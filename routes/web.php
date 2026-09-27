@@ -14,12 +14,24 @@ use Illuminate\Support\Facades\Route;
 // Webhook dari Cloudflare Email Worker (proteksi via X-Webhook-Token, bukan session)
 Route::post('/inbound/email', [InboundEmailController::class, 'store'])->name('inbound.email');
 
-// API baca untuk skrip/bot — autentikasi Bearer token (halaman Pengaturan), tanpa sesi
+// Dokumentasi publik Developer API
+Route::get('/api/docs', [ApiController::class, 'docs'])->name('api.docs');
+
+// API Developer & Bot — Autentikasi Bearer token / X-Api-Token / ?token=
 Route::middleware('api.token')->prefix('api')->name('api.')->group(function () {
+    Route::get('/domains', [ApiController::class, 'domains'])->name('domains');
+    Route::match(['GET', 'POST'], '/create', [ApiController::class, 'create'])->name('create');
+    Route::match(['GET', 'POST'], '/generate', [ApiController::class, 'create'])->name('generate');
+    Route::get('/alias/quick', [ApiController::class, 'quickAlias'])->name('alias.quick');
+    Route::delete('/alias/{alias}', [ApiController::class, 'destroyAlias'])->name('alias.destroy');
+
     Route::get('/emails', [ApiController::class, 'emails'])->name('emails');
     Route::get('/emails/{email}', [ApiController::class, 'show'])->name('emails.show');
+    Route::delete('/emails/{email}', [ApiController::class, 'destroy'])->name('emails.destroy');
+
     Route::get('/otp', [ApiController::class, 'otp'])->name('otp');
-    Route::get('/alias/quick', [ApiController::class, 'quickAlias'])->name('alias.quick');
+    Route::get('/wait-email', [ApiController::class, 'waitEmail'])->name('wait.email');
+    Route::get('/wait-otp', [ApiController::class, 'waitOtp'])->name('wait.otp');
 });
 
 // Gambar inline (cid:) di dalam iframe tampilan email. Di luar grup auth karena

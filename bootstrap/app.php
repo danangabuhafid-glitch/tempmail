@@ -12,10 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Webhook dipanggil mesin (Cloudflare Worker), bukan browser — tanpa CSRF,
-        // diamankan lewat X-Webhook-Token di InboundEmailController
+        // Webhook dan API dipanggil mesin/skrip/bot — tanpa CSRF
         $middleware->validateCsrfTokens(except: [
             'inbound/email',
+            'api/*',
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('login'));

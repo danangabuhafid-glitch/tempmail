@@ -16,10 +16,20 @@ class EnsureApiToken
     public function handle(Request $request, Closure $next): Response
     {
         $token = (string) config('tempmail.api_token');
-        $given = (string) ($request->bearerToken() ?: $request->header('X-Api-Token', ''));
+        $given = (string) (
+            $request->bearerToken()
+            ?: $request->header('X-Api-Token', '')
+            ?: $request->query('token', '')
+            ?: $request->query('api_key', '')
+            ?: $request->input('token', '')
+            ?: $request->input('api_key', '')
+        );
 
         if ($token === '' || $given === '' || !hash_equals($token, $given)) {
-            return response()->json(['message' => 'Token API tidak valid. Buat/salin token di halaman Pengaturan.'], 401);
+            return response()->json([
+                'success' => false,
+                'message' => 'Token API tidak valid. Gunakan Authorization: Bearer <token>, header X-Api-Token, atau parameter ?token=<token>.',
+            ], 401);
         }
 
         return $next($request);

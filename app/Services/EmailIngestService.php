@@ -83,7 +83,7 @@ class EmailIngestService
                     'from_address' => $fromAddress ? Str::limit($fromAddress, 250, '') : null,
                     'from_name' => $fromName ? Str::limit($fromName, 250, '') : null,
                     'subject' => $subject,
-                    'otp_code' => $this->otp->extract($subject, $textBody),
+                    'otp_code' => $this->otp->extract($subject, $textBody, $message->getHtmlContent()),
                     'text_body' => $textBody,
                     'html_body' => $message->getHtmlContent(),
                     'headers_raw' => $headersRaw,

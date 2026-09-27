@@ -10,9 +10,21 @@ class OtpExtractor
 {
     private const KEYWORDS = 'kode|code|otp|pin|verifikasi|verification|verify|sandi|token|passcode|autentikasi|authentication|konfirmasi|confirmation|login';
 
-    public function extract(?string $subject, ?string $textBody): ?string
+    public function extract(?string $subject, ?string $textBody, ?string $htmlBody = null): ?string
     {
-        foreach ([$subject, mb_substr((string) $textBody, 0, 4000)] as $source) {
+        $sources = [$subject, mb_substr((string) $textBody, 0, 4000)];
+
+        $plainFromHtml = null;
+        if (filled($htmlBody)) {
+            $clean = preg_replace('#<style.*?</style>#is', '', $htmlBody);
+            $clean = preg_replace('#<script.*?</script>#is', '', $clean);
+            $plainFromHtml = trim(preg_replace('#\s+#', ' ', strip_tags($clean)));
+            if (blank($textBody) || strlen((string) $textBody) < 20) {
+                $sources[] = mb_substr($plainFromHtml, 0, 4000);
+            }
+        }
+
+        foreach ($sources as $source) {
             if (blank($source)) {
                 continue;
             }
@@ -33,8 +45,13 @@ class OtpExtractor
             }
         }
 
-        // Fallback: baris yang HANYA berisi 6 digit (pola umum email OTP)
-        if (filled($textBody) && preg_match('/^\s*(\d{6})\s*$/m', $textBody, $m)) {
+        // Fallback 1: baris yang HANYA berisi 4-8 digit (pola umum email OTP)
+        if (filled($textBody) && preg_match('/^\s*(\d{4,8})\s*$/m', $textBody, $m)) {
+            return $m[1];
+        }
+
+        // Fallback 2: angka 6 digit di plain text dari HTML jika dekat kata kunci
+        if ($plainFromHtml && preg_match('/(?:' . self::KEYWORDS . ')[^\d\r\n]{0,60}(\d{4,8})\b/iu', $plainFromHtml, $m)) {
             return $m[1];
         }
 

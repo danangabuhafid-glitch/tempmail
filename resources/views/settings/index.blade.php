@@ -166,8 +166,14 @@
                 </div>
 
                 <div class="small text-muted mb-3">
-                    Contoh: <code>curl -H "Authorization: Bearer TOKEN" {{ url('/api/otp') }}?alias=belanja</code><br>
-                    Endpoint: <code>/api/emails</code> · <code>/api/emails/{id}</code> · <code>/api/otp</code> · <code>/api/alias/quick?site=…</code>
+                    <div class="mb-1"><strong>Contoh Penggunaan cURL:</strong></div>
+                    <code>curl -X POST -H "Authorization: Bearer TOKEN" "{{ url('/api/create') }}?prefix=bot_"</code><br>
+                    <code>curl -H "Authorization: Bearer TOKEN" "{{ url('/api/otp') }}?email=bot_xxx@danang.biz.id"</code><br>
+                    <code>curl -H "Authorization: Bearer TOKEN" "{{ url('/api/wait-otp') }}?email=bot_xxx@danang.biz.id"</code>
+                    <div class="mt-2">
+                        <strong>Endpoint Dev API:</strong><br>
+                        <code>POST /api/create</code> (auto-buat) · <code>GET /api/domains</code> · <code>GET /api/emails</code> · <code>GET /api/emails/{id}</code> · <code>GET /api/otp</code> · <code>GET /api/wait-email</code> · <code>GET /api/wait-otp</code> · <a href="{{ url('/api/docs') }}" target="_blank" class="fw-semibold text-decoration-none"><code>GET /api/docs</code> <i class="bi bi-box-arrow-up-right"></i></a>
+                    </div>
                 </div>
 
                 <hr>
