@@ -29,6 +29,15 @@ class EmailAlias extends Model
     }
 
     /**
+     * Daftar domain yang tersedia untuk pembuatan alias di web form.
+     */
+    public static function domainTersedia(): array
+    {
+        $domains = config('tempmail.domains', []);
+        return !empty($domains) ? array_values($domains) : ['danang.biz.id', 'danangabuhafid.my.id', 'projectdanang.biz.id'];
+    }
+
+    /**
      * Buat alias cepat bernama situs (netflix-x4k9) — dipakai bookmarklet & API.
      * Mengembalikan null bila 5x generate kebetulan tabrakan terus.
      */
