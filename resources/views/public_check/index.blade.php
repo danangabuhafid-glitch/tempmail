@@ -396,7 +396,7 @@
         }
 
         try {
-            const url = `{{ route('public.check') }}?alias=${encodeURIComponent(currentAlias)}&domain=${encodeURIComponent(currentDomain)}&json=1`;
+            const url = `{{ route('public.check') }}?alias=${encodeURIComponent(currentAlias)}&domain=${encodeURIComponent(currentDomain)}&json=1&v=2`;
             const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
             const data = await res.json();
 
@@ -506,7 +506,7 @@
         document.getElementById('detail-content').classList.add('d-none');
 
         try {
-            const res = await fetch(`{{ url('/cek/email') }}/${emailId}`);
+            const res = await fetch(`{{ url('/cek/email') }}/${emailId}?v=2`);
             if (!res.ok) throw new Error('Gagal memuat email (HTTP ' + res.status + ')');
             const data = await res.json();
             const em = data.email;

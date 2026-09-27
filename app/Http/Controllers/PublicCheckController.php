@@ -103,7 +103,11 @@ class PublicCheckController extends Controller
             ]);
         }
 
-        return view('public_check.index', compact('domains', 'alias', 'domain', 'emails'));
+        return response()
+            ->view('public_check.index', compact('domains', 'alias', 'domain', 'emails'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**
@@ -115,23 +119,36 @@ class PublicCheckController extends Controller
 
         $otp = $email->otp_code ?: $this->extractOtp($email);
         $showImages = $request->boolean('images', true); // default tampilkan gambar untuk kemudahan user publik
-        $htmlClean = $sanitizer->sanitize($email->html_body, $showImages, $email);
-        $wrappedHtml = '';
-        if (filled($htmlClean)) {
-            $wrappedHtml = '<!DOCTYPE html><html><head>'
-                . '<meta charset="utf-8">'
-                . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
-                . '<style>'
-                . '*, *::before, *::after { box-sizing: border-box; } '
-                . 'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #ffffff; line-height: 1.5; word-break: break-word; } '
-                . 'img { max-width: 100% !important; height: auto !important; display: inline-block; } '
-                . 'table { max-width: 100% !important; height: auto !important; } '
-                . 'td, th { word-break: break-word; } '
-                . 'a { color: #4f46e5; text-decoration: underline; } '
-                . '</style>'
-                . '</head><body>'
-                . $htmlClean
-                . '</body></html>';
+        $isV2 = $request->query('v') === '2';
+
+        if (!$isV2) {
+            // Jika dipanggil oleh tab browser HP lama yang belum di-refresh (masih tersimpan di memori),
+            // otomatis paksa reload window agar membuka antarmuka in-page yang baru
+            $wrappedHtml = '<div style="padding:24px;text-align:center;font-family:sans-serif;">'
+                . '<h4 style="color:#4f46e5;margin-bottom:12px;">Pembaruan Sistem</h4>'
+                . '<p style="color:#64748b;margin-bottom:16px;">Tampilan telah diperbarui ke versi langsung tanpa popup. Memuat ulang...</p>'
+                . '<button onclick="window.top.location.reload(true)" style="padding:10px 20px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;">Muat Ulang Halaman</button>'
+                . '<script>try { window.top.location.reload(true); } catch(e) {}</script>'
+                . '</div>';
+        } else {
+            $htmlClean = $sanitizer->sanitize($email->html_body, $showImages, $email);
+            $wrappedHtml = '';
+            if (filled($htmlClean)) {
+                $wrappedHtml = '<!DOCTYPE html><html><head>'
+                    . '<meta charset="utf-8">'
+                    . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+                    . '<style>'
+                    . '*, *::before, *::after { box-sizing: border-box; } '
+                    . 'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #ffffff; line-height: 1.5; word-break: break-word; } '
+                    . 'img { max-width: 100% !important; height: auto !important; display: inline-block; } '
+                    . 'table { max-width: 100% !important; height: auto !important; } '
+                    . 'td, th { word-break: break-word; } '
+                    . 'a { color: #4f46e5; text-decoration: underline; } '
+                    . '</style>'
+                    . '</head><body>'
+                    . $htmlClean
+                    . '</body></html>';
+            }
         }
 
         return response()->json([
