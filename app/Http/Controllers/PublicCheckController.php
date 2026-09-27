@@ -116,6 +116,23 @@ class PublicCheckController extends Controller
         $otp = $email->otp_code ?: $this->extractOtp($email);
         $showImages = $request->boolean('images', true); // default tampilkan gambar untuk kemudahan user publik
         $htmlClean = $sanitizer->sanitize($email->html_body, $showImages, $email);
+        $wrappedHtml = '';
+        if (filled($htmlClean)) {
+            $wrappedHtml = '<!DOCTYPE html><html><head>'
+                . '<meta charset="utf-8">'
+                . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+                . '<style>'
+                . '*, *::before, *::after { box-sizing: border-box; } '
+                . 'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #ffffff; line-height: 1.5; word-break: break-word; } '
+                . 'img { max-width: 100% !important; height: auto !important; display: inline-block; } '
+                . 'table { max-width: 100% !important; height: auto !important; } '
+                . 'td, th { word-break: break-word; } '
+                . 'a { color: #4f46e5; text-decoration: underline; } '
+                . '</style>'
+                . '</head><body>'
+                . $htmlClean
+                . '</body></html>';
+        }
 
         return response()->json([
             'success' => true,
@@ -129,7 +146,7 @@ class PublicCheckController extends Controller
                 'subject' => $email->subject ?: '(Tanpa Subjek)',
                 'otp' => $otp,
                 'text_body' => $email->text_body,
-                'html_body' => $htmlClean,
+                'html_body' => $wrappedHtml ?: $htmlClean,
                 'has_html' => filled($htmlClean),
                 'spf' => $email->spf_result,
                 'dkim' => $email->dkim_result,
