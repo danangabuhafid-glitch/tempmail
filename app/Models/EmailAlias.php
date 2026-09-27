@@ -66,10 +66,20 @@ class EmailAlias extends Model
     public static function buatBaru(?string $customName = null, ?string $prefix = null, ?string $domain = null, ?Carbon $expiresAt = null, ?string $label = null): ?self
     {
         $domains = config('tempmail.domains', []);
-        $domain = $domain ?: ($domains[0] ?? 'danang.biz.id');
-        if (!in_array($domain, $domains, true) && !empty($domains)) {
-            $domain = $domains[0];
+        if (empty($domains)) {
+            $domains = ['danang.biz.id', 'danangabuhafid.my.id', 'projectdanang.biz.id'];
         }
+
+        // Tentukan domain utama untuk record ini:
+        // Jika tidak ditentukan atau "random"/"all", acak dari semua domain yang tersedia
+        $isRandomDomain = blank($domain) || in_array(strtolower((string) $domain), ['random', 'any', 'all'], true);
+        if ($isRandomDomain) {
+            $selectedDomain = $domains[array_rand($domains)];
+        } else {
+            $selectedDomain = in_array($domain, $domains, true) ? $domain : $domains[0];
+        }
+
+        $chosenAlias = null;
 
         // 1. Jika user meminta custom alias tertentu
         if (filled($customName)) {
@@ -77,49 +87,58 @@ class EmailAlias extends Model
             $clean = preg_replace('/[^a-z0-9._-]+/', '', $clean);
             $clean = trim($clean, '._-');
             if ($clean !== '') {
-                $existing = static::where('alias', $clean)->where('domain', $domain)->first();
+                $existing = static::where('alias', $clean)->where('domain', $selectedDomain)->first();
                 if (!$existing) {
-                    return static::create([
-                        'alias' => $clean,
-                        'domain' => $domain,
-                        'label' => $label ?: 'Dev API',
-                        'expires_at' => $expiresAt,
-                    ]);
+                    $chosenAlias = $clean;
+                } else {
+                    $chosenAlias = $clean . '_' . Str::lower(Str::random(4));
                 }
-                // Jika sudah ada, tambahkan random suffix agar tetap sukses
-                $candidate = $clean . '_' . Str::lower(Str::random(4));
-                return static::create([
-                    'alias' => $candidate,
-                    'domain' => $domain,
+            }
+        }
+
+        // 2. Jika belum terpilih, generate acak dengan prefix
+        if (!$chosenAlias) {
+            $cleanPrefix = '';
+            if (filled($prefix)) {
+                $cleanPrefix = Str::lower(preg_replace('/[^a-z0-9._-]+/', '', $prefix));
+            }
+            if ($cleanPrefix === '') {
+                $cleanPrefix = 'dev_';
+            }
+
+            for ($i = 0; $i < 10; $i++) {
+                $candidate = $cleanPrefix . Str::lower(Str::random(6));
+                if (!static::where('alias', $candidate)->where('domain', $selectedDomain)->exists()) {
+                    $chosenAlias = $candidate;
+                    break;
+                }
+            }
+        }
+
+        if (!$chosenAlias) {
+            return null;
+        }
+
+        // Simpan alias ke domain terpilih
+        $primaryRecord = static::create([
+            'alias' => $chosenAlias,
+            'domain' => $selectedDomain,
+            'label' => $label ?: 'Dev API',
+            'expires_at' => $expiresAt,
+        ]);
+
+        // Daftarkan juga ke domain-domain lainnya agar TTL berlaku merata di seluruh domain
+        foreach ($domains as $d) {
+            if ($d !== $selectedDomain && !static::where('alias', $chosenAlias)->where('domain', $d)->exists()) {
+                static::create([
+                    'alias' => $chosenAlias,
+                    'domain' => $d,
                     'label' => $label ?: 'Dev API',
                     'expires_at' => $expiresAt,
                 ]);
             }
         }
 
-        // 2. Jika ada prefix (misal: bot_, test_, reg_)
-        $cleanPrefix = '';
-        if (filled($prefix)) {
-            $cleanPrefix = Str::lower(preg_replace('/[^a-z0-9._-]+/', '', $prefix));
-        }
-        if ($cleanPrefix === '') {
-            $cleanPrefix = 'dev_';
-        }
-
-        // 3. Generate random alias
-        for ($i = 0; $i < 10; $i++) {
-            $randomStr = Str::lower(Str::random(6));
-            $alias = $cleanPrefix . $randomStr;
-            if (!static::where('alias', $alias)->where('domain', $domain)->exists()) {
-                return static::create([
-                    'alias' => $alias,
-                    'domain' => $domain,
-                    'label' => $label ?: 'Dev API',
-                    'expires_at' => $expiresAt,
-                ]);
-            }
-        }
-
-        return null;
+        return $primaryRecord;
     }
 }

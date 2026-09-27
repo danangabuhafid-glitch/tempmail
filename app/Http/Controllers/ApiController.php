@@ -208,11 +208,16 @@ class ApiController extends Controller
             ], 500);
         }
 
+        $domains = config('tempmail.domains', []);
+        $allAddresses = array_map(fn ($d) => $alias->alias . '@' . $d, $domains);
+
         return response()->json([
             'success' => true,
             'email' => $alias->full_address,
             'alias' => $alias->alias,
             'domain' => $alias->domain,
+            'all_domains' => $allAddresses,
+            'available_domains' => array_values($domains),
             'label' => $alias->label,
             'expires_at' => $alias->expires_at?->toIso8601String(),
             'created_at' => $alias->created_at?->toIso8601String(),

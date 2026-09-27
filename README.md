@@ -54,6 +54,13 @@ Tanpa mail server sendiri, tanpa polling IMAP, real-time, dan gratis di sisi Clo
 
 Tersedia RESTful API lengkap untuk integrasi bot, script pendaftaran, testing, dan automasi.
 
+**Domain yang Didukung (Semua Aktif):**
+1. `@danang.biz.id`
+2. `@danangabuhafid.my.id`
+3. `@projectdanang.biz.id`
+
+> **Domain Rotasi Otomatis:** Saat memanggil `/api/create` tanpa parameter `domain`, server akan **mengacak domain secara otomatis** dari ketiga domain di atas, sekaligus mendaftarkan alias tersebut di seluruh domain. Anda juga bisa memilih domain tertentu lewat parameter `?domain=danangabuhafid.my.id`.
+
 **Autentikasi:**
 Token API didapat dari menu **Pengaturan ➔ API & Bookmarklet** di web.
 Kirim via salah satu metode berikut:
@@ -66,11 +73,11 @@ Kirim via salah satu metode berikut:
 | Method | Endpoint | Deskripsi |
 |---|---|---|
 | `GET` | `/api/docs` | Dokumentasi publik JSON & panduan endpoint |
-| `GET` | `/api/domains` | Daftar domain aktif & domain default |
-| `POST` / `GET` | `/api/create` | **Auto-Buat** alamat temp mail baru (acak / custom + TTL) |
-| `GET` | `/api/emails` | Daftar email masuk (filter: `?email=...`, `?unread=true`) |
+| `GET` | `/api/domains` | Daftar semua domain aktif (`danang.biz.id`, `danangabuhafid.my.id`, `projectdanang.biz.id`) |
+| `POST` / `GET` | `/api/create` | **Auto-Buat** alamat temp mail baru (acak semua domain / pilih domain + TTL) |
+| `GET` | `/api/emails` | Daftar email masuk (filter: `?email=...`, `?alias=...`, `?unread=true`) |
 | `GET` | `/api/emails/{id}` | Detail email lengkap (Teks, HTML, Attachment) |
-| `GET` | `/api/otp` | Ambil kode OTP terbaru secara instan |
+| `GET` | `/api/otp` | Ambil kode OTP terbaru (bisa dari domain mana saja) |
 | `GET` | `/api/wait-email` | **Long-polling**: Tunggu email baru masuk (timeout 5-60s) |
 | `GET` | `/api/wait-otp` | **Long-polling**: Tunggu kode OTP masuk secara real-time |
 | `DELETE` | `/api/emails/{id}` | Hapus email |
@@ -79,23 +86,27 @@ Kirim via salah satu metode berikut:
 #### Contoh cURL
 
 ```bash
-# 1. Auto-buat email acak baru (berlaku 24 jam)
+# 1. Auto-buat email (domain otomatis diacak dari 3 domain aktif)
 curl -X POST -H "Authorization: Bearer TOKEN" \
-  "https://mail.danang.biz.id/api/create?prefix=bot_&domain=danang.biz.id&ttl=24h"
-# → {"success":true,"email":"bot_x8k2pq@danang.biz.id","alias":"bot_x8k2pq",...}
+  "https://mail.danang.biz.id/api/create?prefix=bot_&ttl=24h"
+# → {"success":true,"email":"bot_x8k2pq@danangabuhafid.my.id","all_domains":["bot_x8k2pq@danangabuhafid.my.id","bot_x8k2pq@danang.biz.id","bot_x8k2pq@projectdanang.biz.id"]}
 
-# 2. Ambil daftar email masuk
-curl -H "Authorization: Bearer TOKEN" \
-  "https://mail.danang.biz.id/api/emails?email=bot_x8k2pq@danang.biz.id"
+# 1b. Atau pilih domain spesifik yang diinginkan:
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  "https://mail.danang.biz.id/api/create?prefix=bot_&domain=projectdanang.biz.id&ttl=24h"
 
-# 3. Ambil kode OTP terbaru
+# 2. Ambil daftar email masuk (bisa pakai email lengkap atau alias saja)
 curl -H "Authorization: Bearer TOKEN" \
-  "https://mail.danang.biz.id/api/otp?email=bot_x8k2pq@danang.biz.id"
+  "https://mail.danang.biz.id/api/emails?email=bot_x8k2pq@projectdanang.biz.id"
+
+# 3. Ambil kode OTP terbaru (otomatis mencari di semua domain jika hanya alias)
+curl -H "Authorization: Bearer TOKEN" \
+  "https://mail.danang.biz.id/api/otp?alias=bot_x8k2pq"
 # → {"success":true,"otp":"126848","subject":"Kode OTP Verifikasi",...}
 
 # 4. Long-polling tunggu OTP masuk (tanpa perlu loop retry manual)
 curl -H "Authorization: Bearer TOKEN" \
-  "https://mail.danang.biz.id/api/wait-otp?email=bot_x8k2pq@danang.biz.id&timeout=45"
+  "https://mail.danang.biz.id/api/wait-otp?alias=bot_x8k2pq&timeout=45"
 ```
 
 #### Integrasi Node.js (Puppeteer / Playwright / Axios)

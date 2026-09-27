@@ -62,29 +62,44 @@ Domain email yang aktif:
 ## 🚀 Detail Endpoint & Contoh Request
 
 ### 1. Auto-Buat Alamat Email Baru
-Generate email baru secara otomatis. Jika dipanggil tanpa parameter, bot akan membuat alamat acak berawalan `dev_xxxxxx@danang.biz.id`.
+Generate email baru secara otomatis. Jika dipanggil tanpa parameter `domain`, server akan **mengacak domain secara otomatis** dari ketiga domain aktif Anda (`@danang.biz.id`, `@danangabuhafid.my.id`, `@projectdanang.biz.id`) dan otomatis mendaftarkan alias tersebut di seluruh domain.
 
 - **URL**: `POST /api/create` atau `GET /api/create`
 - **Query / Body Parameter** (Semua Opsional):
   - `name`: Nama username spesifik (mis: `user_tester`). Jika ada benturan, otomatis ditambahkan suffix acak.
   - `prefix`: Awalan email acak (mis: `bot_`, `reg_`, `test_`). Default: `dev_`.
-  - `domain`: Pilihan domain (mis: `danang.biz.id`, `danangabuhafid.my.id`). Default: domain utama.
+  - `domain`: Pilihan domain spesifik (`danang.biz.id`, `danangabuhafid.my.id`, `projectdanang.biz.id`). Jika kosong atau `random`, akan diacak dari semua domain.
   - `ttl`: Masa aktif alias (`10m`, `30m`, `1h`, `24h`, `7d`, `30d`). Default: permanen / mengikuti retensi global.
   - `label`: Catatan keperluan email (mis: `Testing Registrasi Toko`).
 
 **Contoh Request cURL:**
 ```bash
+# Auto buat email acak (domain otomatis diacak)
 curl -X POST -H "Authorization: Bearer YOUR_TOKEN" \
   "https://mail.danang.biz.id/api/create?prefix=bot_&ttl=24h"
+
+# Atau pilih domain spesifik:
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://mail.danang.biz.id/api/create?prefix=bot_&domain=danangabuhafid.my.id&ttl=24h"
 ```
 
 **Contoh Response:**
 ```json
 {
   "success": true,
-  "email": "bot_9x4k1a@danang.biz.id",
+  "email": "bot_9x4k1a@danangabuhafid.my.id",
   "alias": "bot_9x4k1a",
-  "domain": "danang.biz.id",
+  "domain": "danangabuhafid.my.id",
+  "all_domains": [
+    "bot_9x4k1a@danangabuhafid.my.id",
+    "bot_9x4k1a@danang.biz.id",
+    "bot_9x4k1a@projectdanang.biz.id"
+  ],
+  "available_domains": [
+    "danangabuhafid.my.id",
+    "danang.biz.id",
+    "projectdanang.biz.id"
+  ],
   "label": "Dev API",
   "expires_at": "2026-09-28T13:50:00+07:00",
   "created_at": "2026-09-27T13:50:00+07:00"
